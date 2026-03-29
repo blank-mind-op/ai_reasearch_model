@@ -89,7 +89,7 @@ def train_epoch(
         # and which must stay in fp32 (e.g. loss computation).
         # When use_amp=False, autocast does nothing — same as fp32.
 
-        with record_function("forward"):
+        with record_function("forward"): # Jus to for labelling
             with autocast(
                 device_type=device.type,
                 dtype=amp_dtype,
@@ -157,7 +157,7 @@ def train_epoch(
 
                 optimizer.zero_grad(set_to_none=True)
             
-            global_step += 1
+            global_step += 1 # counts the number of weights updates
 
             # Step-level logging — only on update steps so the
             # step number matches actual weight updates
@@ -249,6 +249,6 @@ def eval_epoch(
             labels=y,
         )
 
-        return tracker.compute()
+    return tracker.compute()
 
 
