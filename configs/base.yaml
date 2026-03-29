@@ -1,0 +1,47 @@
+# configs/base.yaml
+name: cifar10_resnet18
+
+model:
+  backbone: resnet18
+  num_classes: 10
+  pretrained: true
+  dropout: 0.3
+
+data:
+  data_dir: ./data
+  batch_size: 128
+  num_workers: 4
+  pin_memory: true
+  val_split: 0.1
+  mean: [0.4914, 0.4822, 0.4465]
+  std:  [0.2470, 0.2435, 0.2616]
+
+optimizer:
+  name: adamw
+  lr: 1.0e-3
+  weight_decay: 1.0e-4
+  grad_clip_norm: 1.0
+  grad_accumulation_steps: 1
+
+scheduler:
+  name: cosine
+  min_lr: 1.0e-6
+  warmup_epochs: 2
+
+training:
+  max_epochs: 20
+  seed: 42
+  device: cuda
+  precision: bf16
+  compile_model: false
+  log_every_n_steps: 50
+  eval_every_n_epochs: 1
+  profile: false        # ← add this
+  profile_steps: 5      # ← add this
+
+checkpoint:
+  save_dir: ./checkpoints
+  save_top_k: 3
+  monitor_metric: val_acc
+  monitor_mode: max
+  resume_from: null
