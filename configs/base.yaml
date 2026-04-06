@@ -9,9 +9,9 @@ model:
 
 data:
   data_dir: ./data
-  batch_size: 128
+  batch_size: 64
   num_workers: 4
-  pin_memory: true
+  pin_memory: false
   val_split: 0.1
   mean: [0.4914, 0.4822, 0.4465]
   std:  [0.2470, 0.2435, 0.2616]

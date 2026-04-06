@@ -234,5 +234,5 @@ def load_config(path : Path) -> ExperimentConfig:
         FileNotFoundError: if the path doesn't exist
     """
     import yaml
-    raw : dict = yaml.safe_load(path.read_text()) or {}
+    raw : dict = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     return ExperimentConfig(**raw)

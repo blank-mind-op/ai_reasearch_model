@@ -79,9 +79,9 @@ def train_epoch(
         # This overlaps the data transfer with other CPU work,
         # making the pipeline slightly faster.
 
-        with record_function("data_to_device"):
-            x = x.to(device, non_blocking = True)
-            y = y.to(device, non_blocking = True)
+        
+        x = x.to(device, non_blocking = True)
+        y = y.to(device, non_blocking = True)
         
         # ── Forward pass ──────────────────────────────────────
         # autocast runs the forward pass in bf16/fp16 automatically.
@@ -89,21 +89,21 @@ def train_epoch(
         # and which must stay in fp32 (e.g. loss computation).
         # When use_amp=False, autocast does nothing — same as fp32.
 
-        with record_function("forward"): # Jus to for labelling
-            with autocast(
-                device_type=device.type,
-                dtype=amp_dtype,
-                enabled=use_amp,
-            ):
-                logits = model(x)
-                # Divide loss by accumulation steps.
-                # Why? Gradients accumulate additively across
-                # N backward passes. Without dividing,
-                # the accumulated gradient is N times larger
-                # than a single large-batch gradient would be.
-                # Dividing here makes it equivalent.
+        
+        with autocast(
+            device_type=device.type,
+            dtype=amp_dtype,
+            enabled=use_amp,
+        ):
+            logits = model(x)
+            # Divide loss by accumulation steps.
+            # Why? Gradients accumulate additively across
+            # N backward passes. Without dividing,
+            # the accumulated gradient is N times larger
+            # than a single large-batch gradient would be.
+            # Dividing here makes it equivalent.
 
-                loss = criterion(logits, y) / grad_accumulation_steps
+            loss = criterion(logits, y) / grad_accumulation_steps
         
         # ── Backward pass ─────────────────────────────────────
         # scaler.scale(loss) multiplies the loss by the scaler's
@@ -111,8 +111,8 @@ def train_epoch(
         # gradients from underflowing to zero.
         # When fp16 is disabled, scaler is a no-op and this is
         # equivalent to loss.backward().
-        with record_function("backward"):
-            scaler.scale(loss).backward()
+        
+        scaler.scale(loss).backward()
         
         # ── Optimizer step ────────────────────────────────────
         # We only update weights every grad_accumulation_steps steps.
@@ -125,37 +125,37 @@ def train_epoch(
         )
 
         if is_update_step:
-            with record_function("optimizer_step"):
-                # Gradient clipping
-                # Before clipping we must unscale the gradients —
-                # scaler multiplied them earlier and we need the
-                # real values to compare against grad_clip_norm.
-                # When fp16 is disabled this is a no-op.
-                if grad_clip_norm is not None:
-                    scaler.unscale_(optimizer)
-                    nn.utils.clip_grad_norm_(
-                        model.parameters(),
-                        max_norm=grad_clip_norm,
-                    )
+            
+            # Gradient clipping
+            # Before clipping we must unscale the gradients —
+            # scaler multiplied them earlier and we need the
+            # real values to compare against grad_clip_norm.
+            # When fp16 is disabled this is a no-op.
+            if grad_clip_norm is not None:
+                scaler.unscale_(optimizer)
+                nn.utils.clip_grad_norm_(
+                    model.parameters(),
+                    max_norm=grad_clip_norm,
+                )
 
-                # scaler.step() calls optimizer.step() internally
-                # but first checks if any gradients are inf/nan
-                # (which happens with fp16). If so, it skips the
-                # step and adjusts the scale factor downward.
-                # When fp16 disabled: equivalent to optimizer.step()
+            # scaler.step() calls optimizer.step() internally
+            # but first checks if any gradients are inf/nan
+            # (which happens with fp16). If so, it skips the
+            # step and adjusts the scale factor downward.
+            # When fp16 disabled: equivalent to optimizer.step()
 
-                scaler.step(optimizer)
+            scaler.step(optimizer)
 
-                # Updates the scale factor for next iteration.
-                # Grows it if no inf/nan were found (more precision),
-                # shrinks it if they were (more stability).
-                # When fp16 disabled: no-op.
+            # Updates the scale factor for next iteration.
+            # Grows it if no inf/nan were found (more precision),
+            # shrinks it if they were (more stability).
+            # When fp16 disabled: no-op.
 
-                scaler.update()
+            scaler.update()
 
-                # clear gradient for next accumulation cycle
+            # clear gradient for next accumulation cycle
 
-                optimizer.zero_grad(set_to_none=True)
+            optimizer.zero_grad(set_to_none=True)
             
             global_step += 1 # counts the number of weights updates
 
@@ -185,10 +185,10 @@ def train_epoch(
             labels=y,
         )
 
-        return tracker.compute(), global_step
+    return tracker.compute(), global_step
 
 
-@torch.inference_mode
+@torch.inference_mode()
 def eval_epoch(
     model : nn.Module,
     loader : DataLoader,
